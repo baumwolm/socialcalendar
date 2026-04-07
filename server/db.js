@@ -21,6 +21,13 @@ db.exec(`
     google_event_id TEXT,
     created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS brand_examples (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    type       TEXT,
+    copy       TEXT    NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 module.exports = db;

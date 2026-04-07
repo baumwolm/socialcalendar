@@ -1,17 +1,15 @@
 const express = require('express');
 const Anthropic = require('@anthropic-ai/sdk');
 const { HttpsProxyAgent } = require('https-proxy-agent');
+const db = require('../db');
 const router = express.Router();
 
-// Lazily create the client so dotenv has time to populate process.env
 let _client = null;
 function getClient() {
   if (!_client) {
     const opts = { apiKey: process.env.ANTHROPIC_API_KEY };
     const proxyUrl = process.env.GLOBAL_AGENT_HTTP_PROXY || process.env.HTTPS_PROXY || process.env.https_proxy;
-    if (proxyUrl) {
-      opts.httpAgent = new HttpsProxyAgent(proxyUrl);
-    }
+    if (proxyUrl) opts.httpAgent = new HttpsProxyAgent(proxyUrl);
     _client = new Anthropic(opts);
   }
   return _client;
@@ -20,12 +18,15 @@ function getClient() {
 const SYSTEM_PROMPT = `You are a social media strategist for Rep'd, a GovTech SaaS company that helps government agencies modernize operations. Your audience is city/county officials, procurement leads, and civic tech professionals on LinkedIn. Write posts that are confident, clear, and human — no jargon, no fluff. Lead with a hook. Deliver value fast. End with a question or CTA. Keep it to 150–250 words. Always return a JSON object with: { copy: string, imageQueries: string[3], bestTime: string, postType: string }`;
 
 const POST_TYPE_CONTEXT = {
-  'Customer Launch': 'A government agency is going live with Rep\'d. Celebrate the milestone, highlight the agency, and convey the real-world impact for residents.',
-  'Case Study': 'Share measurable results and outcomes from a Rep\'d customer. Be specific with data when provided. Tell the story of transformation.',
-  'New Product': 'Rep\'d is releasing a new feature or product. Lead with the problem it solves, not the feature itself. Make officials curious.',
-  'Employee Shoutout': 'Recognize a Rep\'d team member. Be genuine, specific, and make it feel personal — not like an HR announcement.',
-  'GovTech Thought Leadership': 'Share an industry take, trend, or opinion on the GovTech space. Be bold. Spark conversation. Position Rep\'d as the smart voice in the room.',
-  'Conference Recap': 'Rep\'d attended or spoke at an event. Share key takeaways, who you met, and why it matters for the GovTech community.'
+  'Product / Feature Education':                    'Explain what Rep\'d does and how it helps government teams solve a specific problem. Lead with the problem, not the feature. Make it relatable.',
+  'Customer Stories / Case Studies':                'Highlight a real municipality using Rep\'d and the outcomes they\'re seeing. Be specific with numbers when provided. Tell the transformation story.',
+  'Thought Leadership (Industry POV)':              'Share a bold perspective, trend, or opinion on the future of government and technology. Spark conversation. Position Rep\'d as the smart voice in the room.',
+  'Announcements (Product, Partnerships, Launches)':'Communicate a major update — new customer, product release, or partnership. Lead with the impact, not the feature. Make officials pay attention.',
+  'Video Content (Demos + Real Gov Voices)':        'Write copy to accompany a short-form video showcasing Rep\'d or amplifying authentic voices from government staff. Tease what\'s in the video.',
+  'Community / Civic Education Content':            'Share helpful, easy-to-understand information that mirrors what governments share with residents. Educational, approachable, and useful.',
+  'Insights / Data-Driven Posts':                   'Surface a trend, stat, or pattern that helps governments understand resident needs or the GovTech landscape. Data-forward but written for humans.',
+  'Human / Culture / Behind-the-Scenes':            'Show the people, events, and relationships behind Rep\'d. Build trust and familiarity. Genuine and warm — not a press release.',
+  'Timely / Reactive Posts':                        'Respond to a current event, seasonal moment, or policy change relevant to government audiences. Be timely, relevant, and add Rep\'d\'s unique perspective.',
 };
 
 router.post('/', async (req, res) => {
@@ -35,8 +36,20 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'prompt and postType are required' });
   }
 
+  // Fetch brand voice examples for this post type (or any type if not enough)
+  const examples = db.prepare(`
+    SELECT copy FROM brand_examples
+    WHERE type = ? OR type IS NULL
+    ORDER BY CASE WHEN type = ? THEN 0 ELSE 1 END, created_at DESC
+    LIMIT 3
+  `).all(postType, postType);
+
+  const exampleBlock = examples.length > 0
+    ? `\n\nHere are real examples of Rep'd's LinkedIn posts to match the tone and style:\n\n${examples.map((e, i) => `Example ${i + 1}:\n${e.copy}`).join('\n\n')}\n\nMatch this voice and style closely.`
+    : '';
+
   const typeContext = POST_TYPE_CONTEXT[postType] || '';
-  const userMessage = `Post type: ${postType}\nContext for this post type: ${typeContext}\n\nUser's input: ${prompt}\n\nGenerate a LinkedIn post for Rep'd. Return ONLY valid JSON.`;
+  const userMessage = `Post type: ${postType}\nContext: ${typeContext}${exampleBlock}\n\nUser's input: ${prompt}\n\nGenerate a LinkedIn post for Rep'd. Return ONLY valid JSON.`;
 
   try {
     const message = await getClient().messages.create({
@@ -47,24 +60,18 @@ router.post('/', async (req, res) => {
     });
 
     const rawText = message.content[0].text.trim();
-
-    // Extract JSON robustly — strip markdown fences if present
     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return res.status(500).json({ error: 'Model returned malformed response', raw: rawText });
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
-
-    // Ensure required fields
-    const result = {
+    res.json({
       copy: parsed.copy || '',
       imageQueries: Array.isArray(parsed.imageQueries) ? parsed.imageQueries.slice(0, 3) : [],
       bestTime: parsed.bestTime || 'Tuesday–Thursday, 8–10 AM or 5–6 PM',
       postType: parsed.postType || postType
-    };
-
-    res.json(result);
+    });
   } catch (err) {
     console.error('Generation error:', err);
     res.status(500).json({ error: err.message });

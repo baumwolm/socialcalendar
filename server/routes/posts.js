@@ -41,7 +41,17 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'type, date, and copy are required' });
   }
 
-  const VALID_TYPES = ['Customer Launch', 'Case Study', 'New Product', 'Employee Shoutout', 'GovTech Thought Leadership', 'Conference Recap'];
+  const VALID_TYPES = [
+    'Product / Feature Education',
+    'Customer Stories / Case Studies',
+    'Thought Leadership (Industry POV)',
+    'Announcements (Product, Partnerships, Launches)',
+    'Video Content (Demos + Real Gov Voices)',
+    'Community / Civic Education Content',
+    'Insights / Data-Driven Posts',
+    'Human / Culture / Behind-the-Scenes',
+    'Timely / Reactive Posts',
+  ];
   const VALID_STATUSES = ['draft', 'scheduled', 'published'];
 
   if (!VALID_TYPES.includes(type)) return res.status(400).json({ error: 'Invalid post type' });

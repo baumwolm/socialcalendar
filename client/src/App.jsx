@@ -6,6 +6,7 @@ import CalendarGrid from './components/CalendarGrid'
 import RightPanel from './components/RightPanel'
 import PostModal from './components/PostModal'
 import PromptBar from './components/PromptBar'
+import BrandVoice from './components/BrandVoice'
 import { getPosts, getAuthStatus } from './utils/api'
 
 export default function App() {
@@ -15,6 +16,7 @@ export default function App() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalDate, setModalDate] = useState(null)           // date clicked on calendar
   const [activeFilter, setActiveFilter] = useState(null)     // post type filter from sidebar
+  const [brandVoiceOpen, setBrandVoiceOpen] = useState(false)
 
   const queryClient = useQueryClient()
 
@@ -77,6 +79,7 @@ export default function App() {
         setActiveFilter={setActiveFilter}
         authStatus={authStatus}
         posts={posts}
+        onOpenBrandVoice={() => setBrandVoiceOpen(true)}
       />
 
       {/* Main content */}
@@ -104,6 +107,11 @@ export default function App() {
 
       {/* Always-visible prompt bar at bottom */}
       <PromptBar onDraftGenerated={onDraftGenerated} />
+
+      {/* Brand Voice modal */}
+      {brandVoiceOpen && (
+        <BrandVoice onClose={() => setBrandVoiceOpen(false)} />
+      )}
 
       {/* Post modal — new/edit */}
       {modalOpen && (

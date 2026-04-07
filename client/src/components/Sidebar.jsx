@@ -1,6 +1,6 @@
 import { POST_TYPES, STATUS_LABELS } from '../utils/constants'
 
-export default function Sidebar({ activeFilter, setActiveFilter, authStatus, posts }) {
+export default function Sidebar({ activeFilter, setActiveFilter, authStatus, posts, onOpenBrandVoice }) {
   const typeCounts = {}
   posts.forEach(p => {
     typeCounts[p.type] = (typeCounts[p.type] || 0) + 1
@@ -68,6 +68,17 @@ export default function Sidebar({ activeFilter, setActiveFilter, authStatus, pos
             <span style={s.statusCount}>{totalByStatus[key] || 0}</span>
           </div>
         ))}
+      </div>
+
+      <div style={s.divider} />
+
+      {/* Brand Voice */}
+      <div style={s.section}>
+        <div style={s.sectionTitle}>Brand Voice</div>
+        <button style={s.brandBtn} onClick={onOpenBrandVoice}>
+          <span>✦</span> Add Example Posts
+        </button>
+        <div style={s.brandNote}>Teach Claude your tone by adding real Rep'd posts</div>
       </div>
 
       <div style={s.divider} />
@@ -207,6 +218,17 @@ const s = {
     fontSize: 12,
     color: 'var(--text-muted)',
     fontWeight: 600,
+  },
+  brandBtn: {
+    display: 'flex', alignItems: 'center', gap: 6,
+    width: '100%', padding: '7px 8px',
+    background: 'var(--accent-light)', color: 'var(--accent)',
+    borderRadius: 6, fontSize: 12, fontWeight: 600,
+    marginBottom: 4,
+  },
+  brandNote: {
+    fontSize: 11, color: 'var(--text-light)',
+    padding: '0 8px', lineHeight: 1.5,
   },
   gcalNote: {
     fontSize: 12,

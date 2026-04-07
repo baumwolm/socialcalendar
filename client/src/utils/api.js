@@ -11,6 +11,19 @@ export const deletePost = (id) => api.delete(`/posts/${id}`).then(r => r.data);
 
 // AI Generation
 export const generateDraft = (data) => api.post('/generate', data).then(r => r.data);
+export const refineCopy = (copy, instruction) => api.post('/refine', { copy, instruction }).then(r => r.data);
+
+// Media upload
+export const uploadMedia = (file) => {
+  const form = new FormData();
+  form.append('file', file);
+  return api.post('/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } }).then(r => r.data);
+};
+
+// Brand voice examples
+export const getExamples = (type) => api.get('/examples', { params: type ? { type } : {} }).then(r => r.data);
+export const createExample = (data) => api.post('/examples', data).then(r => r.data);
+export const deleteExample = (id) => api.delete(`/examples/${id}`).then(r => r.data);
 
 // Auth
 export const getAuthStatus = () => api.get('/auth/status').then(r => r.data);

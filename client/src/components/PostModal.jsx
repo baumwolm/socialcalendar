@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { createPost, updatePost, deletePost, syncToCalendar, generateDraft } from '../utils/api'
+import { createPost, updatePost, deletePost, syncToCalendar, generateDraft, refineCopy, uploadMedia } from '../utils/api'
 import { POST_TYPES, POST_TYPE_MAP, STATUS_LABELS, STATUSES } from '../utils/constants'
 import ImageSuggestions from './ImageSuggestions'
 
@@ -17,11 +17,15 @@ export default function PostModal({ post, draft, defaultDate, onClose, onSaved, 
   const [bestTime,   setBestTime]   = useState(post?.best_time  || draft?.bestTime || '')
   const [imageQueries, setImageQueries] = useState(draft?.imageQueries || [])
 
-  const [saving,      setSaving]      = useState(false)
-  const [deleting,    setDeleting]    = useState(false)
-  const [syncing,     setSyncing]     = useState(false)
-  const [regenerating, setRegenerating] = useState(false)
+  const [saving,        setSaving]        = useState(false)
+  const [deleting,      setDeleting]      = useState(false)
+  const [syncing,       setSyncing]       = useState(false)
+  const [regenerating,  setRegenerating]  = useState(false)
+  const [refining,      setRefining]      = useState(null)  // 'shorter' | 'much_shorter' | 'more_human'
+  const [uploading,     setUploading]     = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [mediaType,     setMediaType]     = useState(post?.image_url?.match(/\.(mp4|mov|avi|webm)/i) ? 'video' : 'image')
+  const fileInputRef = useRef(null)
 
   const selectedType = POST_TYPE_MAP[type]
   const wordCount = copy.trim().split(/\s+/).filter(Boolean).length
@@ -105,6 +109,44 @@ export default function PostModal({ post, draft, defaultDate, onClose, onSaved, 
     }
   }
 
+  async function handleRefine(instruction) {
+    if (!copy.trim()) { toast.error('No copy to refine'); return }
+    setRefining(instruction)
+    try {
+      const result = await refineCopy(copy, instruction)
+      setCopy(result.copy)
+      toast.success('Copy updated!')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Refine failed')
+    } finally {
+      setRefining(null)
+    }
+  }
+
+  async function handleFileUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const result = await uploadMedia(file)
+      setImageUrl(result.url)
+      setMediaType(result.mimetype.startsWith('video') ? 'video' : 'image')
+      toast.success('Media uploaded!')
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Upload failed')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  function handleCopyToClipboard() {
+    if (!copy.trim()) { toast.error('Nothing to copy'); return }
+    navigator.clipboard.writeText(copy.trim())
+      .then(() => toast.success('Copied to clipboard!'))
+      .catch(() => toast.error('Copy failed — select and copy manually'))
+  }
+
   // Keyboard shortcut: Escape to close
   useEffect(() => {
     const handler = (e) => { if (e.key === 'Escape') onClose() }
@@ -165,17 +207,40 @@ export default function PostModal({ post, draft, defaultDate, onClose, onSaved, 
             <div style={s.field}>
               <div style={s.labelRow}>
                 <label style={s.label}>Post Copy</label>
-                <span style={{ ...s.wordCount, color: wordCount > 250 ? '#ef4444' : wordCount > 200 ? '#f59e0b' : '#22c55e' }}>
-                  {wordCount} / 250 words
-                </span>
+                <div style={s.copyActions}>
+                  <span style={{ ...s.wordCount, color: wordCount > 250 ? '#ef4444' : wordCount > 200 ? '#f59e0b' : '#22c55e' }}>
+                    {wordCount} / 250 words
+                  </span>
+                  <button style={s.copyBtn} onClick={handleCopyToClipboard} title="Copy to clipboard">
+                    📋 Copy Post
+                  </button>
+                </div>
               </div>
               <textarea
                 value={copy}
                 onChange={e => setCopy(e.target.value)}
                 style={s.textarea}
                 placeholder="Write your LinkedIn post here, or generate one with the prompt bar below…"
-                rows={12}
+                rows={10}
               />
+              {/* Instant rewrite buttons */}
+              <div style={s.refineRow}>
+                <span style={s.refineLabel}>Quick edit:</span>
+                {[
+                  { key: 'shorter',      label: 'Shorter' },
+                  { key: 'much_shorter', label: 'Much Shorter' },
+                  { key: 'more_human',   label: 'More Human' },
+                ].map(btn => (
+                  <button
+                    key={btn.key}
+                    style={{ ...s.refineBtn, opacity: refining ? 0.6 : 1 }}
+                    onClick={() => handleRefine(btn.key)}
+                    disabled={!!refining}
+                  >
+                    {refining === btn.key ? <><span className="spinner" /> {btn.label}…</> : btn.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Best time + image query */}
@@ -202,18 +267,43 @@ export default function PostModal({ post, draft, defaultDate, onClose, onSaved, 
               </div>
             </div>
 
-            {/* Image URL */}
+            {/* Media upload */}
             <div style={s.field}>
-              <label style={s.label}>Image URL (optional)</label>
-              <input
-                type="url"
-                value={imageUrl}
-                onChange={e => setImageUrl(e.target.value)}
-                style={s.input}
-                placeholder="Paste an image URL to attach to this post"
-              />
-              {imageUrl && (
-                <img src={imageUrl} alt="Post preview" style={s.imagePreview} onError={e => e.target.style.display = 'none'} />
+              <label style={s.label}>Image or Video</label>
+              <div style={s.uploadArea}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  style={{ display: 'none' }}
+                  onChange={handleFileUpload}
+                />
+                <button
+                  style={s.uploadBtn}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? <><span className="spinner" /> Uploading…</> : '⬆ Upload Image or Video'}
+                </button>
+                <span style={s.uploadOr}>or</span>
+                <input
+                  type="url"
+                  value={imageUrl}
+                  onChange={e => { setImageUrl(e.target.value); setMediaType('image') }}
+                  style={{ ...s.input, flex: 1 }}
+                  placeholder="Paste a URL"
+                />
+                {imageUrl && (
+                  <button style={s.clearMedia} onClick={() => setImageUrl('')}>✕</button>
+                )}
+              </div>
+              {/* Preview */}
+              {imageUrl && mediaType === 'image' && (
+                <img src={imageUrl} alt="Preview" style={s.mediaPreview}
+                  onError={e => e.target.style.display = 'none'} />
+              )}
+              {imageUrl && mediaType === 'video' && (
+                <video src={imageUrl} controls style={s.mediaPreview} />
               )}
             </div>
 
@@ -495,12 +585,53 @@ const s = {
     minHeight: 120,
     fontFamily: 'inherit',
   },
-  imagePreview: {
-    width: '100%',
-    maxHeight: 120,
-    objectFit: 'cover',
-    borderRadius: 6,
+  copyActions: {
+    display: 'flex', alignItems: 'center', gap: 8,
+  },
+  copyBtn: {
+    display: 'flex', alignItems: 'center', gap: 4,
+    padding: '3px 10px',
+    background: '#f0fdf4', color: '#16a34a',
+    border: '1px solid #86efac', borderRadius: 5,
+    fontSize: 11, fontWeight: 600,
+  },
+  refineRow: {
+    display: 'flex', alignItems: 'center', gap: 6,
     marginTop: 6,
+  },
+  refineLabel: {
+    fontSize: 11, color: 'var(--text-light)', fontWeight: 500, flexShrink: 0,
+  },
+  refineBtn: {
+    display: 'flex', alignItems: 'center', gap: 4,
+    padding: '4px 12px',
+    background: '#f8fafc', color: 'var(--text)',
+    border: '1px solid var(--border)', borderRadius: 5,
+    fontSize: 12, fontWeight: 500,
+    transition: 'background 0.1s',
+  },
+  uploadArea: {
+    display: 'flex', alignItems: 'center', gap: 8,
+  },
+  uploadBtn: {
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: '7px 12px',
+    background: '#f8fafc', color: 'var(--text)',
+    border: '1px solid var(--border)', borderRadius: 6,
+    fontSize: 12, fontWeight: 500, flexShrink: 0,
+  },
+  uploadOr: {
+    fontSize: 11, color: 'var(--text-light)', flexShrink: 0,
+  },
+  clearMedia: {
+    background: '#fee2e2', color: '#ef4444',
+    border: '1px solid #fecaca', borderRadius: 5,
+    padding: '4px 8px', fontSize: 12, flexShrink: 0,
+  },
+  mediaPreview: {
+    width: '100%', maxHeight: 160,
+    objectFit: 'cover', borderRadius: 6, marginTop: 8,
+    border: '1px solid var(--border)',
   },
   // LinkedIn preview card
   preview: {
