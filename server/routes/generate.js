@@ -1,8 +1,21 @@
 const express = require('express');
 const Anthropic = require('@anthropic-ai/sdk');
+const { HttpsProxyAgent } = require('https-proxy-agent');
 const router = express.Router();
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Lazily create the client so dotenv has time to populate process.env
+let _client = null;
+function getClient() {
+  if (!_client) {
+    const opts = { apiKey: process.env.ANTHROPIC_API_KEY };
+    const proxyUrl = process.env.GLOBAL_AGENT_HTTP_PROXY || process.env.HTTPS_PROXY || process.env.https_proxy;
+    if (proxyUrl) {
+      opts.httpAgent = new HttpsProxyAgent(proxyUrl);
+    }
+    _client = new Anthropic(opts);
+  }
+  return _client;
+}
 
 const SYSTEM_PROMPT = `You are a social media strategist for Rep'd, a GovTech SaaS company that helps government agencies modernize operations. Your audience is city/county officials, procurement leads, and civic tech professionals on LinkedIn. Write posts that are confident, clear, and human — no jargon, no fluff. Lead with a hook. Deliver value fast. End with a question or CTA. Keep it to 150–250 words. Always return a JSON object with: { copy: string, imageQueries: string[3], bestTime: string, postType: string }`;
 
@@ -26,8 +39,8 @@ router.post('/', async (req, res) => {
   const userMessage = `Post type: ${postType}\nContext for this post type: ${typeContext}\n\nUser's input: ${prompt}\n\nGenerate a LinkedIn post for Rep'd. Return ONLY valid JSON.`;
 
   try {
-    const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+    const message = await getClient().messages.create({
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: userMessage }]
