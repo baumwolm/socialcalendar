@@ -42,15 +42,14 @@ router.post('/', (req, res) => {
   }
 
   const VALID_TYPES = [
-    'Product / Feature Education',
-    'Customer Stories / Case Studies',
-    'Thought Leadership (Industry POV)',
-    'Announcements (Product, Partnerships, Launches)',
-    'Video Content (Demos + Real Gov Voices)',
-    'Community / Civic Education Content',
-    'Insights / Data-Driven Posts',
-    'Human / Culture / Behind-the-Scenes',
-    'Timely / Reactive Posts',
+    'Product Update',
+    'Customer Stories',
+    'Thought Leadership',
+    'Announcements',
+    'Video Content',
+    'Platform Insights',
+    'Rep Behind-the-Scenes',
+    'Timely / Reactive',
   ];
   const VALID_STATUSES = ['draft', 'scheduled', 'published'];
 

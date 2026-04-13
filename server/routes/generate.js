@@ -18,15 +18,14 @@ function getClient() {
 const SYSTEM_PROMPT = `You are a social media strategist for Rep'd, a GovTech SaaS company that helps government agencies modernize operations. Your audience is city/county officials, procurement leads, and civic tech professionals on LinkedIn. Write posts that are confident, clear, and human — no jargon, no fluff. Lead with a hook. Deliver value fast. End with a question or CTA. Keep it to 150–250 words. Always return a JSON object with: { copy: string, imageQueries: string[3], bestTime: string, postType: string }`;
 
 const POST_TYPE_CONTEXT = {
-  'Product / Feature Education':                    'Explain what Rep\'d does and how it helps government teams solve a specific problem. Lead with the problem, not the feature. Make it relatable.',
-  'Customer Stories / Case Studies':                'Highlight a real municipality using Rep\'d and the outcomes they\'re seeing. Be specific with numbers when provided. Tell the transformation story.',
-  'Thought Leadership (Industry POV)':              'Share a bold perspective, trend, or opinion on the future of government and technology. Spark conversation. Position Rep\'d as the smart voice in the room.',
-  'Announcements (Product, Partnerships, Launches)':'Communicate a major update — new customer, product release, or partnership. Lead with the impact, not the feature. Make officials pay attention.',
-  'Video Content (Demos + Real Gov Voices)':        'Write copy to accompany a short-form video showcasing Rep\'d or amplifying authentic voices from government staff. Tease what\'s in the video.',
-  'Community / Civic Education Content':            'Share helpful, easy-to-understand information that mirrors what governments share with residents. Educational, approachable, and useful.',
-  'Insights / Data-Driven Posts':                   'Surface a trend, stat, or pattern that helps governments understand resident needs or the GovTech landscape. Data-forward but written for humans.',
-  'Human / Culture / Behind-the-Scenes':            'Show the people, events, and relationships behind Rep\'d. Build trust and familiarity. Genuine and warm — not a press release.',
-  'Timely / Reactive Posts':                        'Respond to a current event, seasonal moment, or policy change relevant to government audiences. Be timely, relevant, and add Rep\'d\'s unique perspective.',
+  'Product Update':          'Explain what Rep\'d does and how it helps government teams solve a specific problem. Lead with the problem, not the feature. Make it relatable.',
+  'Customer Stories':        'Highlight a real municipality using Rep\'d and the outcomes they\'re seeing. Be specific with numbers when provided. Tell the transformation story.',
+  'Thought Leadership':      'Share a bold perspective, trend, or opinion on the future of government and technology. Spark conversation. Position Rep\'d as the smart voice in the room.',
+  'Announcements':           'Communicate a major update — new customer, product release, or partnership. Lead with the impact, not the feature. Make officials pay attention.',
+  'Video Content':           'Write copy to accompany a short-form video showcasing Rep\'d or amplifying authentic voices from government staff. Tease what\'s in the video.',
+  'Platform Insights':       'Surface a trend, stat, or pattern that helps governments understand resident needs or the GovTech landscape. Data-forward but written for humans.',
+  'Rep Behind-the-Scenes':   'Show the people, events, and relationships behind Rep\'d. Build trust and familiarity. Genuine and warm — not a press release.',
+  'Timely / Reactive':       'Respond to a current event, seasonal moment, or policy change relevant to government audiences. Be timely, relevant, and add Rep\'d\'s unique perspective.',
 };
 
 router.post('/', async (req, res) => {
