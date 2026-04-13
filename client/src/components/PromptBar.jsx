@@ -14,7 +14,6 @@ export default function PromptBar({ onDraftGenerated }) {
     e.preventDefault()
     if (!prompt.trim()) { toast.error('Add a prompt first'); return }
     if (!date) { toast.error('Pick a date'); return }
-
     setLoading(true)
     try {
       const draft = await generateDraft({ prompt: prompt.trim(), postType })
@@ -31,21 +30,14 @@ export default function PromptBar({ onDraftGenerated }) {
   const selectedType = POST_TYPES.find(t => t.label === postType)
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        ...s.bar,
-        gridColumn: '1 / 4',
-        gridRow: '2',
-      }}
-    >
-      {/* Type selector */}
+    <form onSubmit={handleSubmit} style={s.bar}>
+      {/* Type pill */}
       <div style={s.typeWrapper}>
         <span style={{ ...s.typeDot, background: selectedType?.color }} />
         <select
           value={postType}
           onChange={e => setPostType(e.target.value)}
-          style={s.select}
+          style={s.typeSelect}
         >
           {POST_TYPES.map(t => (
             <option key={t.label} value={t.label}>{t.label}</option>
@@ -53,7 +45,7 @@ export default function PromptBar({ onDraftGenerated }) {
         </select>
       </div>
 
-      {/* Date picker */}
+      {/* Date */}
       <input
         type="date"
         value={date}
@@ -62,23 +54,22 @@ export default function PromptBar({ onDraftGenerated }) {
         required
       />
 
-      {/* Prompt input */}
+      {/* Prompt */}
       <input
         type="text"
         value={prompt}
         onChange={e => setPrompt(e.target.value)}
-        placeholder="Describe a customer, event, employee, product, or industry update…"
+        placeholder="Describe a customer win, product update, event, team member, or industry take…"
         style={s.promptInput}
         disabled={loading}
       />
 
-      {/* Submit */}
-      <button type="submit" style={s.btn} disabled={loading}>
-        {loading ? (
-          <><span className="spinner" /> Generating…</>
-        ) : (
-          <><span style={s.sparkle}>✦</span> Generate Draft</>
-        )}
+      {/* Generate */}
+      <button type="submit" style={{ ...s.btn, opacity: loading ? 0.75 : 1 }} disabled={loading}>
+        {loading
+          ? <><span className="spinner" style={{ marginRight: 6 }} />Generating…</>
+          : <><span style={s.bolt}>⚡</span> Generate Draft</>
+        }
       </button>
     </form>
   )
@@ -86,69 +77,47 @@ export default function PromptBar({ onDraftGenerated }) {
 
 const s = {
   bar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-    padding: '0 16px',
+    display: 'flex', alignItems: 'center', gap: 10,
+    padding: '0 20px',
+    height: 'var(--bar-height)',
     background: 'var(--surface)',
     borderTop: '1px solid var(--border)',
-    boxShadow: '0 -2px 8px rgba(0,0,0,0.04)',
+    boxShadow: '0 -2px 10px rgba(0,0,0,0.05)',
+    flexShrink: 0,
   },
   typeWrapper: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
+    display: 'flex', alignItems: 'center', gap: 7,
     background: '#f9fafb',
-    border: '1px solid var(--border)',
-    borderRadius: 6,
-    padding: '0 10px',
-    height: 38,
-    flexShrink: 0,
+    border: '1.5px solid var(--border)',
+    borderRadius: 7, padding: '0 10px',
+    height: 40, flexShrink: 0,
   },
   typeDot: {
-    width: 8, height: 8,
-    borderRadius: '50%',
-    flexShrink: 0,
+    width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
   },
-  select: {
-    border: 'none',
-    background: 'transparent',
-    fontSize: 13,
-    fontWeight: 500,
-    color: 'var(--text)',
-    cursor: 'pointer',
-    padding: 0,
-    outline: 'none',
+  typeSelect: {
+    border: 'none', background: 'transparent',
+    fontSize: 12, fontWeight: 500, color: 'var(--text)',
+    cursor: 'pointer', padding: 0, outline: 'none',
+    maxWidth: 180,
   },
   dateInput: {
-    height: 38,
-    padding: '0 10px',
-    fontSize: 13,
-    flexShrink: 0,
-    width: 140,
+    height: 40, padding: '0 10px',
+    fontSize: 13, flexShrink: 0, width: 140,
+    borderRadius: 7,
   },
   promptInput: {
-    flex: 1,
-    height: 38,
-    padding: '0 14px',
-    fontSize: 14,
-    borderRadius: 6,
+    flex: 1, height: 40, padding: '0 14px',
+    fontSize: 14, borderRadius: 7,
   },
   btn: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 6,
-    height: 38,
-    padding: '0 20px',
-    background: 'var(--accent)',
-    color: '#fff',
-    borderRadius: 6,
-    fontWeight: 600,
-    fontSize: 13,
-    flexShrink: 0,
-    transition: 'opacity 0.1s',
+    display: 'flex', alignItems: 'center',
+    height: 40, padding: '0 22px',
+    background: 'var(--crimson)',
+    color: '#fff', borderRadius: 7,
+    fontWeight: 700, fontSize: 13,
+    flexShrink: 0, letterSpacing: '0.01em',
+    transition: 'background 0.15s',
   },
-  sparkle: {
-    fontSize: 14,
-  },
+  bolt: { marginRight: 5, fontSize: 14 },
 }

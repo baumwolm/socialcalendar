@@ -138,10 +138,10 @@ const s = {
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
     padding: '20px 24px 16px',
-    borderBottom: '1px solid var(--border)',
+    borderBottom: '2px solid var(--crimson)',
     flexShrink: 0,
   },
-  title: { fontSize: 17, fontWeight: 700, marginBottom: 4 },
+  title: { fontSize: 17, fontWeight: 700, marginBottom: 4, color: 'var(--text)' },
   subtitle: { fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 },
   closeBtn: {
     width: 28, height: 28, borderRadius: 6,
@@ -175,7 +175,7 @@ const s = {
   addBtn: {
     alignSelf: 'flex-start',
     padding: '8px 18px',
-    background: 'var(--accent)', color: '#fff',
+    background: 'var(--crimson)', color: '#fff',
     borderRadius: 6, fontWeight: 600, fontSize: 13,
   },
   list: { flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12 },
