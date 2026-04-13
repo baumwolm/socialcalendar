@@ -18,10 +18,10 @@ router.get('/', (req, res) => {
 
 // POST /examples — add a brand voice example
 router.post('/', (req, res) => {
-  const { copy, type } = req.body;
+  const { copy, type, url } = req.body;
   if (!copy?.trim()) return res.status(400).json({ error: 'copy is required' });
   try {
-    const result = db.prepare('INSERT INTO brand_examples (type, copy) VALUES (?, ?)').run(type || null, copy.trim());
+    const result = db.prepare('INSERT INTO brand_examples (type, copy, url) VALUES (?, ?, ?)').run(type || null, copy.trim(), url || null);
     res.status(201).json(db.prepare('SELECT * FROM brand_examples WHERE id = ?').get(result.lastInsertRowid));
   } catch (err) {
     res.status(500).json({ error: err.message });

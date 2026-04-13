@@ -26,8 +26,14 @@ db.exec(`
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     type       TEXT,
     copy       TEXT    NOT NULL,
+    url        TEXT,
     created_at TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 `);
+
+// Migrate: add url column to brand_examples if it doesn't exist yet
+try {
+  db.exec(`ALTER TABLE brand_examples ADD COLUMN url TEXT`);
+} catch (_) { /* column already exists — safe to ignore */ }
 
 module.exports = db;
