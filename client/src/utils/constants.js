@@ -10,17 +10,17 @@ export const POST_TYPES = [
     description: 'Highlights real municipalities using your product and the outcomes they\'re seeing.'
   },
   {
-    label: 'Thought Leadership',
+    label: 'Thought Leadership (Industry POV)',
     color: '#a855f7', bg: '#f3e8ff', border: '#d8b4fe',
     description: 'Shares perspectives, trends, and opinions on the future of government and technology.'
   },
   {
-    label: 'Announcements',
+    label: 'Announcements (Product, Partnerships, Launches)',
     color: '#f97316', bg: '#ffedd5', border: '#fdba74',
     description: 'Communicates major updates like new customers, product releases, or partnerships.'
   },
   {
-    label: 'Video Content',
+    label: 'Video Content (Demos + Real Gov Voices)',
     color: '#ef4444', bg: '#fee2e2', border: '#fca5a5',
     description: 'Uses short-form video to showcase the product and amplify authentic voices from government staff.'
   },
@@ -30,14 +30,9 @@ export const POST_TYPES = [
     description: 'Surfaces trends and patterns from user data to help governments understand resident needs.'
   },
   {
-    label: 'Rep Behind-the-Scenes',
+    label: "Rep'd Behind-the-Scenes",
     color: '#ec4899', bg: '#fce7f3', border: '#f9a8d4',
     description: 'Shows the people, events, and relationships behind the company to build trust and familiarity.'
-  },
-  {
-    label: 'Timely / Reactive',
-    color: '#f59e0b', bg: '#fef3c7', border: '#fcd34d',
-    description: 'Responds to current events, seasonal moments, or policy changes relevant to government audiences.'
   },
 ]
 

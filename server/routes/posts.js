@@ -44,12 +44,11 @@ router.post('/', (req, res) => {
   const VALID_TYPES = [
     'Product Update',
     'Customer Stories',
-    'Thought Leadership',
-    'Announcements',
-    'Video Content',
+    'Thought Leadership (Industry POV)',
+    'Announcements (Product, Partnerships, Launches)',
+    'Video Content (Demos + Real Gov Voices)',
     'Platform Insights',
-    'Rep Behind-the-Scenes',
-    'Timely / Reactive',
+    "Rep'd Behind-the-Scenes",
   ];
   const VALID_STATUSES = ['draft', 'scheduled', 'published'];
 
