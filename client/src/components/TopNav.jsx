@@ -1,4 +1,4 @@
-export default function TopNav({ onOpenBrandVoice }) {
+export default function TopNav({ onOpenBrandVoice, onOpenGenerate }) {
   return (
     <nav style={s.nav}>
       <div style={s.left}>
@@ -14,6 +14,9 @@ export default function TopNav({ onOpenBrandVoice }) {
       <div style={s.right}>
         <button style={s.brandBtn} onClick={onOpenBrandVoice}>
           ✦ Brand Voice
+        </button>
+        <button style={s.generateBtn} onClick={onOpenGenerate}>
+          ⚡ Generate Post
         </button>
       </div>
     </nav>
@@ -81,6 +84,14 @@ const s = {
     borderRadius: 6,
     fontSize: 12, fontWeight: 500,
     border: '1px solid rgba(255,255,255,0.15)',
-    transition: 'background 0.1s',
+  },
+  generateBtn: {
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: '7px 16px',
+    background: 'var(--crimson)',
+    color: '#fff',
+    borderRadius: 6,
+    fontSize: 13, fontWeight: 700,
+    border: 'none',
   },
 }

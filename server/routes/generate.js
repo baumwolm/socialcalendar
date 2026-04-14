@@ -15,7 +15,21 @@ function getClient() {
   return _client;
 }
 
-const SYSTEM_PROMPT = `You are a social media strategist for Rep'd, a GovTech SaaS company that helps government agencies modernize operations. Your audience is city/county officials, procurement leads, and civic tech professionals on LinkedIn. Write posts that are confident, clear, and human — no jargon, no fluff. Lead with a hook. Deliver value fast. End with a question or CTA. Keep it to 150–250 words. Always return a JSON object with: { copy: string, imageQueries: string[3], bestTime: string, postType: string }`;
+const SYSTEM_PROMPT = `You are a social media strategist for Rep'd, a GovTech SaaS company that helps government agencies modernize operations. Your audience is city/county officials, procurement leads, and civic tech professionals on LinkedIn.
+
+BRAND VOICE: When brand voice examples are provided, study them carefully and mirror that exact voice, tone, rhythm, and sentence structure — regardless of post type. Those examples represent Rep'd's real voice and must guide all output.
+
+LINKEDIN BEST PRACTICES:
+- Open with a bold hook on the very first line: a surprising stat, a relatable frustration, or a confident statement. No preambles.
+- Use short paragraphs (1–3 sentences) with line breaks for mobile readability.
+- Write conversationally — contractions, direct address, real language. No corporate speak.
+- Lead with the problem or insight, not the product name or feature.
+- Include one specific detail (number, city name, outcome) to make it feel real.
+- End with a genuine question or clear CTA that invites a reply or click.
+- Optimal length: 150–250 words. Never exceed 300.
+- Avoid bullet-point walls, hashtag spam (max 3 relevant tags), and buzzword phrases.
+
+Always return ONLY a valid JSON object: { copy: string, imageQueries: string[3], bestTime: string, postType: string }`;
 
 const POST_TYPE_CONTEXT = {
   'Product Update':                                'Explain what Rep\'d does and how it helps government teams solve a specific problem. Lead with the problem, not the feature. Make it relatable.',
@@ -34,16 +48,15 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'prompt and postType are required' });
   }
 
-  // Fetch brand voice examples for this post type (or any type if not enough)
+  // Fetch brand voice examples — type-matched first, then any, up to 5 total
   const examples = db.prepare(`
     SELECT copy FROM brand_examples
-    WHERE type = ? OR type IS NULL
     ORDER BY CASE WHEN type = ? THEN 0 ELSE 1 END, created_at DESC
-    LIMIT 3
-  `).all(postType, postType);
+    LIMIT 5
+  `).all(postType);
 
   const exampleBlock = examples.length > 0
-    ? `\n\nHere are real examples of Rep'd's LinkedIn posts to match the tone and style:\n\n${examples.map((e, i) => `Example ${i + 1}:\n${e.copy}`).join('\n\n')}\n\nMatch this voice and style closely.`
+    ? `\n\nBRAND VOICE EXAMPLES — these are real Rep'd LinkedIn posts. Mirror this voice exactly:\n\n${examples.map((e, i) => `--- Example ${i + 1} ---\n${e.copy}`).join('\n\n')}\n\n---\nApply this voice to all content you generate.`
     : '';
 
   const typeContext = POST_TYPE_CONTEXT[postType] || '';

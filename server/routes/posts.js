@@ -35,7 +35,7 @@ router.get('/:id', (req, res) => {
 
 // POST /posts — create new post
 router.post('/', (req, res) => {
-  const { type, date, copy, status = 'draft', image_query, image_url, notes, best_time } = req.body;
+  const { type, date, copy, status = 'draft', image_query, image_url, notes, best_time, assigned_to } = req.body;
 
   if (!type || !date || !copy) {
     return res.status(400).json({ error: 'type, date, and copy are required' });
@@ -57,10 +57,10 @@ router.post('/', (req, res) => {
 
   try {
     const stmt = db.prepare(`
-      INSERT INTO posts (type, date, copy, status, image_query, image_url, notes, best_time)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO posts (type, date, copy, status, image_query, image_url, notes, best_time, assigned_to)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    const result = stmt.run(type, date, copy, status, image_query || null, image_url || null, notes || null, best_time || null);
+    const result = stmt.run(type, date, copy, status, image_query || null, image_url || null, notes || null, best_time || null, assigned_to || null);
     const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(result.lastInsertRowid);
     res.status(201).json(post);
   } catch (err) {
@@ -73,7 +73,7 @@ router.patch('/:id', (req, res) => {
   const post = db.prepare('SELECT * FROM posts WHERE id = ?').get(req.params.id);
   if (!post) return res.status(404).json({ error: 'Post not found' });
 
-  const allowed = ['type', 'date', 'copy', 'status', 'image_query', 'image_url', 'notes', 'best_time', 'google_event_id'];
+  const allowed = ['type', 'date', 'copy', 'status', 'image_query', 'image_url', 'notes', 'best_time', 'google_event_id', 'assigned_to'];
   const updates = {};
 
   for (const key of allowed) {

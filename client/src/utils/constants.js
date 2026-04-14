@@ -38,6 +38,13 @@ export const POST_TYPES = [
 
 export const POST_TYPE_MAP = Object.fromEntries(POST_TYPES.map(t => [t.label, t]))
 
+export const TEAM_MEMBERS = [
+  { id: 'MF', name: 'Mark Friese',    initials: 'MF', color: '#3b82f6' },
+  { id: 'DH', name: 'Dior Hightower', initials: 'DH', color: '#8b5cf6' },
+  { id: 'MB', name: 'Mike Baumwoll',  initials: 'MB', color: '#c41952' },
+]
+export const TEAM_MEMBER_MAP = Object.fromEntries(TEAM_MEMBERS.map(m => [m.id, m]))
+
 export const STATUSES = ['draft', 'scheduled', 'published']
 
 export const STATUS_LABELS = {

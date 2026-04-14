@@ -1,6 +1,6 @@
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
          addDays, isSameMonth, addMonths, subMonths, isToday } from 'date-fns'
-import { POST_TYPE_MAP } from '../utils/constants'
+import { POST_TYPE_MAP, TEAM_MEMBER_MAP } from '../utils/constants'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -83,6 +83,14 @@ export default function CalendarGrid({ currentDate, setCurrentDate, posts, loadi
                       onClick={e => { e.stopPropagation(); onPostClick(post) }}
                     >
                       <span style={s.pillCopy}>{post.copy.slice(0, 30)}…</span>
+                      {post.assigned_to && TEAM_MEMBER_MAP[post.assigned_to] && (
+                        <span style={{
+                          ...s.pillAvatar,
+                          background: TEAM_MEMBER_MAP[post.assigned_to].color,
+                        }}>
+                          {TEAM_MEMBER_MAP[post.assigned_to].initials}
+                        </span>
+                      )}
                     </button>
                   )
                 })}
@@ -213,6 +221,12 @@ const s = {
   pillCopy: {
     overflow: 'hidden', textOverflow: 'ellipsis',
     whiteSpace: 'nowrap', flex: 1,
+  },
+  pillAvatar: {
+    width: 14, height: 14, borderRadius: '50%',
+    color: '#fff', fontSize: 7, fontWeight: 700,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0, marginLeft: 3,
   },
   morePill: {
     fontSize: 10, color: 'var(--text-light)', padding: '1px 4px',

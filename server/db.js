@@ -31,9 +31,20 @@ db.exec(`
   );
 `);
 
-// Migrate: add url column to brand_examples if it doesn't exist yet
-try {
-  db.exec(`ALTER TABLE brand_examples ADD COLUMN url TEXT`);
-} catch (_) { /* column already exists — safe to ignore */ }
+// Additive migrations — safe to run repeatedly
+const migrations = [
+  `ALTER TABLE brand_examples ADD COLUMN url TEXT`,
+  `ALTER TABLE posts ADD COLUMN assigned_to TEXT`,
+  `CREATE TABLE IF NOT EXISTS comments (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id    INTEGER NOT NULL,
+    author     TEXT    NOT NULL,
+    text       TEXT    NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  )`,
+];
+for (const sql of migrations) {
+  try { db.exec(sql); } catch (_) { /* already applied — safe to ignore */ }
+}
 
 module.exports = db;

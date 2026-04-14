@@ -1,20 +1,62 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
-import { getExamples, createExample, deleteExample } from '../utils/api'
+import { getExamples, createExample, deleteExample, scrapeUrl } from '../utils/api'
 import { POST_TYPES } from '../utils/constants'
 
 export default function BrandVoice({ onClose }) {
-  const [copy,   setCopy]   = useState('')
-  const [type,   setType]   = useState('')
-  const [url,    setUrl]    = useState('')
-  const [saving, setSaving] = useState(false)
+  const [copy,      setCopy]      = useState('')
+  const [type,      setType]      = useState('')
+  const [url,       setUrl]       = useState('')
+  const [saving,    setSaving]    = useState(false)
+  const [scraping,  setScraping]  = useState(false)
+  const [expanded,  setExpanded]  = useState(new Set())
   const queryClient = useQueryClient()
 
   const { data: examples = [] } = useQuery({
     queryKey: ['examples'],
     queryFn: () => getExamples()
   })
+
+  // Auto-fetch LinkedIn content when URL field loses focus
+  async function handleUrlBlur() {
+    const trimmed = url.trim()
+    if (!trimmed || !trimmed.includes('linkedin.com')) return
+    if (copy.trim()) return  // don't overwrite existing text
+    setScraping(true)
+    try {
+      const result = await scrapeUrl(trimmed)
+      if (result.copy) {
+        setCopy(result.copy)
+        toast.success('Post text pulled from LinkedIn!')
+      } else {
+        toast('Could not extract text automatically — paste the post below.', { icon: 'ℹ️' })
+      }
+    } catch {
+      toast('Could not fetch the URL — paste the post text below.', { icon: 'ℹ️' })
+    } finally {
+      setScraping(false)
+    }
+  }
+
+  async function handleFetchClick() {
+    const trimmed = url.trim()
+    if (!trimmed) { toast.error('Enter a LinkedIn URL first'); return }
+    setScraping(true)
+    try {
+      const result = await scrapeUrl(trimmed)
+      if (result.copy) {
+        setCopy(result.copy)
+        toast.success('Post text pulled!')
+      } else {
+        toast('Could not extract text — paste the post below.', { icon: 'ℹ️' })
+      }
+    } catch {
+      toast('Could not fetch — paste the post text below.', { icon: 'ℹ️' })
+    } finally {
+      setScraping(false)
+    }
+  }
 
   async function handleAdd() {
     if (!copy.trim()) { toast.error('Paste the post text first'); return }
@@ -35,12 +77,22 @@ export default function BrandVoice({ onClose }) {
     try {
       await deleteExample(id)
       queryClient.invalidateQueries({ queryKey: ['examples'] })
+      setExpanded(prev => { const n = new Set(prev); n.delete(id); return n })
     } catch {
       toast.error('Failed to remove')
     }
   }
 
-  const wordCount = copy.trim().split(/\s+/).filter(Boolean).length
+  function toggleExpand(id) {
+    setExpanded(prev => {
+      const n = new Set(prev)
+      n.has(id) ? n.delete(id) : n.add(id)
+      return n
+    })
+  }
+
+  const wordCount    = copy.trim().split(/\s+/).filter(Boolean).length
+  const PREVIEW_CHARS = 160
 
   return (
     <div style={s.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
@@ -50,7 +102,9 @@ export default function BrandVoice({ onClose }) {
         <div style={s.header}>
           <div>
             <h2 style={s.title}>Brand Voice Examples</h2>
-            <p style={s.subtitle}>Paste in real Rep'd posts so Claude learns your style and tone.</p>
+            <p style={s.subtitle}>
+              Add real Rep'd LinkedIn posts so Claude learns your style and applies it to every draft.
+            </p>
           </div>
           <button style={s.closeBtn} onClick={onClose}>✕</button>
         </div>
@@ -70,14 +124,27 @@ export default function BrandVoice({ onClose }) {
 
           {/* LinkedIn URL */}
           <div style={s.field}>
-            <label style={s.label}>LINKEDIN POST URL (OPTIONAL)</label>
-            <input
-              type="url"
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-              style={s.input}
-              placeholder="https://www.linkedin.com/posts/repd-us_..."
-            />
+            <label style={s.label}>
+              LINKEDIN POST URL (OPTIONAL)
+              {scraping && <span style={s.scrapingBadge}>Fetching…</span>}
+            </label>
+            <div style={s.urlRow}>
+              <input
+                type="url"
+                value={url}
+                onChange={e => setUrl(e.target.value)}
+                onBlur={handleUrlBlur}
+                style={{ ...s.input, flex: 1 }}
+                placeholder="https://www.linkedin.com/posts/repd-us_…"
+                disabled={scraping}
+              />
+              {url.trim() && (
+                <button style={s.fetchBtn} onClick={handleFetchClick} disabled={scraping}>
+                  ↓ Pull text
+                </button>
+              )}
+            </div>
+            <p style={s.urlHint}>Paste a URL and we'll try to pull the post text automatically.</p>
           </div>
 
           {/* Post copy */}
@@ -87,13 +154,14 @@ export default function BrandVoice({ onClose }) {
               value={copy}
               onChange={e => setCopy(e.target.value)}
               style={s.textarea}
-              placeholder="Paste an existing Rep'd LinkedIn post here. Claude will study the tone, structure, and style to match it in future drafts..."
+              placeholder="Paste an existing Rep'd LinkedIn post here. Claude will study the tone, structure, and style to match it in future drafts…"
               rows={5}
+              disabled={scraping}
             />
             <div style={s.wordCount}>{wordCount} words</div>
           </div>
 
-          <button style={{ ...s.addBtn, opacity: saving ? 0.7 : 1 }} onClick={handleAdd} disabled={saving}>
+          <button style={{ ...s.addBtn, opacity: (saving || scraping) ? 0.7 : 1 }} onClick={handleAdd} disabled={saving || scraping}>
             {saving ? 'Saving…' : '+ Add Example'}
           </button>
         </div>
@@ -102,7 +170,9 @@ export default function BrandVoice({ onClose }) {
         <div style={s.list}>
           <div style={s.listHeader}>
             <span style={s.listCount}>{examples.length} example{examples.length !== 1 ? 's' : ''} saved</span>
-            {examples.length > 0 && <span style={s.listNote}>Claude uses these when generating drafts</span>}
+            {examples.length > 0 && (
+              <span style={s.listNote}>Claude uses all of these when generating drafts</span>
+            )}
           </div>
 
           {examples.length === 0 && (
@@ -112,9 +182,13 @@ export default function BrandVoice({ onClose }) {
           )}
 
           {examples.map(ex => {
-            const typeInfo = POST_TYPES.find(t => t.label === ex.type)
+            const typeInfo   = POST_TYPES.find(t => t.label === ex.type)
+            const isExpanded = expanded.has(ex.id)
+            const needsToggle = ex.copy.length > PREVIEW_CHARS
+
             return (
               <div key={ex.id} style={s.card}>
+                {/* Card header */}
                 <div style={s.cardHeader}>
                   <div style={s.cardMeta}>
                     {ex.type ? (
@@ -132,7 +206,21 @@ export default function BrandVoice({ onClose }) {
                   </div>
                   <button style={s.deleteX} onClick={() => handleDelete(ex.id)} title="Remove">✕</button>
                 </div>
-                <div style={s.cardCopy}>{ex.copy}</div>
+
+                {/* Card copy — expandable */}
+                <div style={s.cardBody}>
+                  <div style={s.cardCopy}>
+                    {isExpanded || !needsToggle
+                      ? ex.copy
+                      : ex.copy.slice(0, PREVIEW_CHARS) + '…'
+                    }
+                  </div>
+                  {needsToggle && (
+                    <button style={s.toggleBtn} onClick={() => toggleExpand(ex.id)}>
+                      {isExpanded ? '▲ Show less' : '▼ Read full post'}
+                    </button>
+                  )}
+                </div>
               </div>
             )
           })}
@@ -180,9 +268,26 @@ const s = {
   label: {
     fontSize: 10, fontWeight: 700, color: 'var(--crimson)',
     textTransform: 'uppercase', letterSpacing: '0.08em',
+    display: 'flex', alignItems: 'center', gap: 8,
+  },
+  scrapingBadge: {
+    fontSize: 10, fontWeight: 500, color: '#6b7280',
+    background: '#f3f4f6', padding: '2px 7px', borderRadius: 10,
   },
   select: { height: 38, padding: '0 10px', borderRadius: 6, fontSize: 13, width: '100%' },
-  input:  { height: 38, padding: '0 10px', borderRadius: 6, fontSize: 13, width: '100%' },
+  input:  { height: 38, padding: '0 10px', borderRadius: 6, fontSize: 13 },
+  urlRow: { display: 'flex', alignItems: 'center', gap: 8 },
+  fetchBtn: {
+    height: 38, padding: '0 14px',
+    background: 'var(--crimson-light)', color: 'var(--crimson)',
+    border: '1px solid var(--crimson-border)',
+    borderRadius: 6, fontSize: 12, fontWeight: 600,
+    flexShrink: 0,
+  },
+  urlHint: {
+    fontSize: 11, color: 'var(--text-light)',
+    margin: 0, lineHeight: 1.5,
+  },
   textarea: {
     padding: '10px 12px', borderRadius: 6, fontSize: 13,
     lineHeight: 1.7, resize: 'vertical', fontFamily: 'inherit',
@@ -195,7 +300,6 @@ const s = {
     background: 'var(--crimson)', color: '#fff',
     borderRadius: 6, fontWeight: 700, fontSize: 13,
   },
-  // Saved examples list
   list: {
     flex: 1, overflowY: 'auto',
     padding: '16px 24px',
@@ -203,7 +307,7 @@ const s = {
   },
   listHeader: {
     display: 'flex', alignItems: 'center', gap: 8,
-    marginBottom: 2,
+    marginBottom: 2, flexShrink: 0,
   },
   listCount: { fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' },
   listNote:  { fontSize: 11, color: 'var(--text-light)', fontStyle: 'italic' },
@@ -213,7 +317,7 @@ const s = {
   },
   card: {
     border: '1px solid var(--border)', borderRadius: 8,
-    overflow: 'hidden',
+    overflow: 'hidden', flexShrink: 0,
   },
   cardHeader: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -236,12 +340,21 @@ const s = {
     background: '#fee2e2', color: '#ef4444',
     fontSize: 11, fontWeight: 700,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    border: 'none', flexShrink: 0,
+    border: 'none', flexShrink: 0, cursor: 'pointer',
+  },
+  cardBody: {
+    padding: '10px 12px',
+    background: 'var(--surface)',
   },
   cardCopy: {
-    padding: '10px 12px',
     fontSize: 12, lineHeight: 1.75,
     color: 'var(--text)', whiteSpace: 'pre-wrap',
-    background: 'var(--surface)',
+  },
+  toggleBtn: {
+    marginTop: 6,
+    padding: '3px 0',
+    background: 'none', border: 'none',
+    fontSize: 11, color: 'var(--crimson)',
+    fontWeight: 600, cursor: 'pointer',
   },
 }

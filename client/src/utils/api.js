@@ -25,6 +25,14 @@ export const getExamples = (type) => api.get('/examples', { params: type ? { typ
 export const createExample = (data) => api.post('/examples', data).then(r => r.data);
 export const deleteExample = (id) => api.delete(`/examples/${id}`).then(r => r.data);
 
+// Comments
+export const getComments    = (postId)       => api.get(`/posts/${postId}/comments`).then(r => r.data);
+export const createComment  = (postId, data) => api.post(`/posts/${postId}/comments`, data).then(r => r.data);
+export const deleteComment  = (postId, id)   => api.delete(`/posts/${postId}/comments/${id}`).then(r => r.data);
+
+// LinkedIn scrape
+export const scrapeUrl = (url) => api.post('/scrape', { url }).then(r => r.data);
+
 // Auth
 export const getAuthStatus = () => api.get('/auth/status').then(r => r.data);
 export const googleLogout = () => api.post('/auth/logout').then(r => r.data);

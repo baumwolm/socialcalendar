@@ -27,6 +27,8 @@ app.use('/examples', require('./routes/examples'));
 app.use('/posts', require('./routes/posts'));
 app.use('/auth', require('./routes/auth'));
 app.use('/calendar', require('./routes/calendar'));
+app.use('/scrape', require('./routes/scrape'));
+app.use('/posts/:postId/comments', require('./routes/comments'));
 
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 

@@ -5,18 +5,19 @@ import TopNav from './components/TopNav'
 import Sidebar from './components/Sidebar'
 import CalendarGrid from './components/CalendarGrid'
 import PostModal from './components/PostModal'
-import PromptBar from './components/PromptBar'
+import GenerateModal from './components/GenerateModal'
 import BrandVoice from './components/BrandVoice'
 import { getPosts, getAuthStatus } from './utils/api'
 
 export default function App() {
-  const [currentDate,    setCurrentDate]    = useState(new Date())
-  const [selectedPost,   setSelectedPost]   = useState(null)
-  const [draft,          setDraft]          = useState(null)
-  const [modalOpen,      setModalOpen]      = useState(false)
-  const [modalDate,      setModalDate]      = useState(null)
-  const [activeFilter,   setActiveFilter]   = useState(null)
-  const [brandVoiceOpen, setBrandVoiceOpen] = useState(false)
+  const [currentDate,     setCurrentDate]     = useState(new Date())
+  const [selectedPost,    setSelectedPost]    = useState(null)
+  const [draft,           setDraft]           = useState(null)
+  const [modalOpen,       setModalOpen]       = useState(false)
+  const [modalDate,       setModalDate]       = useState(null)
+  const [activeFilter,    setActiveFilter]    = useState(null)
+  const [brandVoiceOpen,  setBrandVoiceOpen]  = useState(false)
+  const [generateOpen,    setGenerateOpen]    = useState(false)
 
   const queryClient = useQueryClient()
 
@@ -63,7 +64,10 @@ export default function App() {
   return (
     <div style={s.root}>
       {/* Top nav */}
-      <TopNav onOpenBrandVoice={() => setBrandVoiceOpen(true)} />
+      <TopNav
+        onOpenBrandVoice={() => setBrandVoiceOpen(true)}
+        onOpenGenerate={() => setGenerateOpen(true)}
+      />
 
       {/* Content row */}
       <div style={s.content}>
@@ -85,10 +89,14 @@ export default function App() {
         </main>
       </div>
 
-      {/* Prompt bar */}
-      <PromptBar onDraftGenerated={onDraftGenerated} />
-
       {/* Modals */}
+      {generateOpen && (
+        <GenerateModal
+          onClose={() => setGenerateOpen(false)}
+          onDraftGenerated={onDraftGenerated}
+        />
+      )}
+
       {brandVoiceOpen && <BrandVoice onClose={() => setBrandVoiceOpen(false)} />}
 
       {modalOpen && (
